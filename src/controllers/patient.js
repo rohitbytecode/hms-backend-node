@@ -1,6 +1,6 @@
 import Patient from '../models/patient.js';
 
-const createPatient = async (req, res) => {
+const createPatient = async (req, res, next) => {
   try {
     const patient = new Patient(req.body);
     await patient.save();
@@ -10,7 +10,7 @@ const createPatient = async (req, res) => {
   }
 };
 
-const getPatients = async (req, res) => {
+const getPatients = async (req, res, next) => {
   try {
     const patients = await Patient.find();
     res.json(patients);
@@ -19,7 +19,7 @@ const getPatients = async (req, res) => {
   }
 };
 
-const updatePatient = async (req, res) => {
+const updatePatient = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -40,7 +40,7 @@ const updatePatient = async (req, res) => {
   }
 };
 
-const deletePatient = async (req, res) => {
+const deletePatient = async (req, res, next) => {
   try {
     const { id } = req.params;
 

@@ -69,7 +69,7 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/departments', deptRoutes);
 app.use('/api/appointments', appointmentRoutes);
 
-app.use((req, res, _next) => {
+app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: "Route not found"

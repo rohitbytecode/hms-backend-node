@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import doctorService from '../services/doctor.service.js';
 
 export const login = async (req, res, next) => {
   try {
