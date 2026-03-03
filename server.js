@@ -2,7 +2,6 @@ import 'dotenv/config';
 import http from 'http';
 import app from './src/app.js';
 import connectDB from './src/config/db.js';
-import { start } from 'repl';
 
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -35,27 +34,32 @@ const startServer = async() => {
 
 startServer();
 
+const shutdownGracefully = (exitCode = 0) => {
+  if (server) {
+    server.close(() => {
+      console.log("Server closed gracefully");
+      process.exit(exitCode);
+    });
+
+    setTimeout(() => {
+      console.error("Forced shutdown after timeout");
+      process.exit(exitCode);
+    }, 10000).unref();
+  }
+  else {
+    process.exit(exitCode);
+  }
+};
+
 process.on("unhandledRejection", (err) => {
   console.error("Unhandled Rejection: ", err);
-  shutdownGracefully();
+  shutdownGracefully(1);
 });
 
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception: ", err);
-  shutdownGracefully();
+  shutdownGracefully(1);
 });
-
-const shutdownGracefully = () => {
-  if (server) {
-    server.close(() => {
-      console.log("Server closed grecefully");
-      process.exit(1);
-    });
-  }
-  else {
-    process.exit(1);
-  }
-};
 
 process.on("SIGTERM", () => {
   console.log("SIGTERM received. Shutting down...");
@@ -63,7 +67,6 @@ process.on("SIGTERM", () => {
 });
 
 process.on("SIGINT", () => {
-  console.log("SIGINT reveiced. Shutting down...");
+  console.log("SIGINT received. Shutting down...");
   shutdownGracefully();
 });
-
