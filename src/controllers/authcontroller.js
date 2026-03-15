@@ -17,7 +17,7 @@ export const login = async (req, res) => {
     const user = await User.findOne({
       email: { $regex: new RegExp(`^${email}$`, 'i') },
       role: { $regex: new RegExp(`^${role}$`, 'i') },
-    }).select('email role status password, mustchangepassword');
+    }).select('email role status password');
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid role or email' });
     }
@@ -33,15 +33,6 @@ export const login = async (req, res) => {
 
     if (user.status !== 'Active') {
       return res.status(403).json({ success: false, message: "Your account is currently inactive. Kindly reach out to the admin for support." });
-    }
-
-    if (user.mustchangepassword) {
-      return res.status(200).json({
-        success: true,
-        reuirePasswordChange: true,
-        message: "You are required to change your password before proceeding.",
-        email: user.email,
-      });
     }
 
     const token = jwt.sign(

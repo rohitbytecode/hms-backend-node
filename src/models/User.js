@@ -72,25 +72,15 @@ const userSchema = new mongoose.Schema({
     match: /.+@.+\..+/
   },
 
-  patientId: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "Patient"
-},
-
   password: { 
     type: String, 
     required: true 
   },
 
-  mustChangePassword: {
-  type: Boolean,
-  default: false
-  },
-
   role: { 
     type: String, 
     required: true, 
-    enum: ['admin', 'doctor','receptionist','billing','patient'] 
+    enum: ['admin', 'doctor','receptionist','billing', 'patient'] 
   },
 
   name: { type: String },
