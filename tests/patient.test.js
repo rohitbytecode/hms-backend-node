@@ -60,7 +60,10 @@ describe('Patient Integration Tests', () => {
         });
 
       expect(res.statusCode).toBe(201);
-      expect(res.body._id).toBeDefined();
+
+      const patient = res.body.data || res.body;
+
+      expect(patient._id).toBeDefined();
     });
 
     it('should fail if missing required patient details', async () => {

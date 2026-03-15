@@ -54,8 +54,11 @@ describe('HMS Patient Flow Integration', () => {
       });
 
     expect(res.statusCode).toBe(201);
-    expect(res.body._id).toBeDefined();
-    patientId = res.body._id;
+
+    const patient = res.body.data || res.body;
+
+    expect(patient._id).toBeDefined();
+    patientId = patient._id;
   });
 
   it('2. Should fetch patient by ID (Verifying the 404 fix)', async () => {
