@@ -28,7 +28,7 @@ import appointmentRoutes from './routes/appointment.js';
 
 const app = express();
 
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 
 //basic security
 app.disable('x-powered-by');

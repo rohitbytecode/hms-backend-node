@@ -1,5 +1,9 @@
 import Billing from '../models/billing.js';
 import billingService from '../services/billing.service.js';
+import mongoose from 'mongoose';
+import { createOrder } from '../services/payment.service.js';
+import razorpay from '../config/razorpay.js';
+import crypto from 'crypto';
 
 const createBilling = async (req, res, next) => {
   try {
@@ -51,6 +55,94 @@ const getAllBilling = async (req, res, next) => {
         pages: Math.ceil(total / limit),
       },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getMyBills = async (req, res, next) => {
+  try {
+    const patient = await mongoose.model('Patient').findOne({ email: req.user.email });
+    if (!patient) {
+      return res.status(404).json({ success: false, message: "Patient record not found" });
+    }
+
+    const bills = await Billing.find({ patient: patient._id })
+      .populate({
+        path: 'appointment',
+        populate: [
+          { path: 'doctor', select: 'name' },
+          { path: 'dept', select: 'dept' }
+        ]
+      })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: bills,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createRazorpayOrder = async (req, res, next) => {
+  try {
+    const { amount, billId } = req.body;
+    
+    // Check if bill exists
+    const bill = await Billing.findById(billId);
+    if (!bill) {
+      return res.status(404).json({ success: false, message: "Bill not found" });
+    }
+
+    const order = await createOrder(amount);
+
+    res.status(200).json({
+      success: true,
+      keyId: process.env.RAZORPAY_KEY_ID,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyRazorpayPayment = async (req, res, next) => {
+  try {
+    const { orderId, paymentId, signature, billId } = req.body;
+
+    const body = orderId + "|" + paymentId;
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(body.toString())
+      .digest("hex");
+
+    if (expectedSignature === signature) {
+      // Update bill status
+      const bill = await Billing.findById(billId);
+      if (bill) {
+        bill.status = "paid";
+        bill.paymentMethod = "online";
+        bill.transactionId = paymentId;
+        bill.paidAt = new Date();
+        await bill.save();
+      }
+
+      res.status(200).json({
+        success: true,
+        valid: true,
+        message: "Payment verified successfully"
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        valid: false,
+        message: "Invalid signature"
+      });
+    }
   } catch (error) {
     next(error);
   }
@@ -190,5 +282,8 @@ export {
   changePassword,
   getAllBillingStaff,
   updateBillingStaff,
-  deleteBillingStaff
+  deleteBillingStaff,
+  getMyBills,
+  createRazorpayOrder,
+  verifyRazorpayPayment
 }

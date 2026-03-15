@@ -10,6 +10,19 @@ router.post('/login', authController.login);
 router.post('/send-otp', otpLimiter,authController.sendOTP);
 router.post('/verify-otp', authController.validateOTP);
 
+// Include protect middleware for /me route
+import { protect } from '../middleware/authmiddleware.js';
+
+router.get('/me', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    res.json({ success: true, data: user });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 router.get('/health', (req, res) => {
   res.json({
     status: 'OK',

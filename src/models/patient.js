@@ -41,7 +41,12 @@ emerno:{
     type:String,
     match:/^[0-9]{10}$/
     },
-medical_history: {type:String}
+medical_history: {type:String},
+paymentMode: {
+    type: String,
+    enum: ['cash', 'online'],
+    default: 'cash'
+  }
 },{ timestamps: true});
 
 const Patient= mongoose.model('Patient', Patientschema);

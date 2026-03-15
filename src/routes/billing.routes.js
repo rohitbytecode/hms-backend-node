@@ -9,29 +9,50 @@ const router = express.Router();
 router.post(
   "/",
   protect,
-  authorize(["admin"]),
+  authorize(["admin", "billing", "receptionist"]),
   billingController.createBilling
 );
 
 router.get(
   "/",
   protect,
-  authorize(["admin", "billing"]),
+  authorize(["admin", "billing", "receptionist"]),
   billingController.getAllBilling
 );
 
 router.patch(
   "/:id/status",
   protect,
-  authorize(["admin", "billing"]),
+  authorize(["admin", "billing", "receptionist"]),
   billingController.updateBillingStatus
 );
 
 router.delete(
   "/:id",
   protect,
-  authorize(["admin"]),
+  authorize(["admin", "billing", "receptionist"]),
   billingController.deleteBilling
+);
+
+router.get(
+  "/my",
+  protect,
+  authorize(["patient"]),
+  billingController.getMyBills
+);
+
+router.post(
+  "/create-order",
+  protect,
+  authorize(["patient"]),
+  billingController.createRazorpayOrder
+);
+
+router.post(
+  "/verify-payment",
+  protect,
+  authorize(["patient"]),
+  billingController.verifyRazorpayPayment
 );
 
 

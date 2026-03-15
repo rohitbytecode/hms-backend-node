@@ -1,11 +1,53 @@
 import Patient from '../models/patient.js';
+import User from '../models/User.js';
+import bcrypt from 'bcrypt';
+import * as emailService from '../services/email.service.js';
 
 const createPatient = async (req, res, next) => {
   try {
+    const { name, email, phno, paymentMode } = req.body;
+    console.log(`Creating patient: ${name}, Email: ${email}, PaymentMode: ${paymentMode}`);
+
+    // Create the patient record
     const patient = new Patient(req.body);
     await patient.save();
+
+    // If online payment, create a patient portal account
+    if (paymentMode === 'online') {
+      console.log(`Online payment mode detected for ${email}. Processing portal creation...`);
+      const existingUser = await User.findOne({ email });
+      if (!existingUser) {
+        // Use phone number as default password
+        const password = phno; // Plain text for the email
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        await User.create({
+          name,
+          email,
+          password: hashedPassword,
+          role: 'patient',
+          status: 'Active',
+          phno
+        });
+        console.log(`Patient portal User record created for: ${email}`);
+
+        // Send credentials email
+        try {
+          await emailService.sendPortalCredentials(email, name, password);
+          console.log(`Portal credentials email sent to: ${email}`);
+        } catch (mailErr) {
+          console.error(`Failed to send portal credentials email: ${mailErr.message}`);
+        }
+      } else {
+        console.log(`User account already exists for: ${email}. Skipping portal creation.`);
+      }
+    } else {
+      console.log(`Payment mode is '${paymentMode}'. Skipping portal creation.`);
+    }
+
     res.status(201).json(patient);
   } catch (err) {
+    console.error(`Error in createPatient: ${err.message}`);
     next(err);
   }
 };
@@ -14,6 +56,21 @@ const getPatients = async (req, res, next) => {
   try {
     const patients = await Patient.find();
     res.json(patients);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getPatientById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const patient = await Patient.findById(id);
+    if (!patient) {
+      const error = new Error('Patient not found');
+      error.statusCode = 404;
+      return next(error);
+    }
+    res.json(patient);
   } catch (err) {
     next(err);
   }
@@ -61,6 +118,7 @@ const deletePatient = async (req, res, next) => {
 export {
   createPatient,
   getPatients,
+  getPatientById,
   updatePatient,
   deletePatient
 };
