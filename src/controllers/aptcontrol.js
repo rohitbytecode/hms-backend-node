@@ -85,7 +85,7 @@ const updateAppointment = async (req, res, next) => {
 
     if (
       req.user.role === "doctor" &&
-      appointment.doctor.toString() !== req.user.id
+      appointment.doctor.toString() !== req.user.id.toString()
     ) {
       return res.status(403).json({
         success: false,

@@ -31,7 +31,7 @@ export const protect = async (req, res, next) => {
 
       req.user = {
         id: user._id,
-        role: user.role.toLowerCase(),
+        role: String(user.role || '').trim().toLowerCase(),
         email: user.email,
       };
 
@@ -57,8 +57,9 @@ export const protect = async (req, res, next) => {
 export const authorize = (...roles) => {
   return (req, res, next) => {
     const allowedRoles = Array.isArray(roles[0]) ? roles[0] : roles;
+    const normalizedAllowed = allowedRoles.map((r) => String(r || '').trim().toLowerCase());
 
-    if (!req.user || !allowedRoles.includes(req.user.role)) {
+    if (!req.user || !normalizedAllowed.includes(String(req.user.role || '').trim().toLowerCase())) {
       return res.status(403).json({
         success: false,
         message: "Access denied",

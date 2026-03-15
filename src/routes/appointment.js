@@ -7,28 +7,28 @@ const router = express.Router();
 router.post(
   '/',
   protect,
-  authorize('admin', 'doctor', 'receptionist'),
+  authorize('admin', 'doctor', 'receptionist','billing'),
   appointmentController.createAppointment
 );
 
 router.get(
   '/',
   protect,
-  authorize('admin', 'doctor', 'receptionist', 'patient'),
+  authorize('admin', 'doctor', 'receptionist', 'patient', 'billing'),
   appointmentController.getAppointments
 );
 
 router.get(
   '/:id',
   protect,
-  authorize('admin', 'doctor', 'receptionist', 'patient'),
+  authorize('admin', 'doctor', 'receptionist', 'patient', 'billing'),
   appointmentController.getAppointmentById
 );
 
 router.put(
   '/:id',
   protect,
-  authorize('admin', 'doctor', 'receptionist'),
+  authorize('admin', 'doctor', 'receptionist','billing'),
   appointmentController.updateAppointment
 );
 
