@@ -32,6 +32,12 @@ const getAppointments = async (req, res) => {
     let query = {};
     if (role === 'doctor') {
       query.doctor = userId; 
+    } else if (role === 'patient') {
+      const patient = await mongoose.model('Patient').findOne({ email: req.user.email });
+      if (!patient) {
+        return res.status(404).json({ message: 'Patient record not found' });
+      }
+      query.patient = patient._id;
     }
 
     const appointments = await Appointment.find(query)

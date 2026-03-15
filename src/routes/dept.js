@@ -10,6 +10,6 @@ router.put('/:id', protect, authorize('admin'), departmentController.updateDepar
 
 router.delete('/:id', protect, authorize('admin'), departmentController.deleteDepartment);
 
-router.get('/', protect, authorize('admin', 'doctor'), departmentController.getDepartments);
+router.get('/', protect, authorize('admin', 'doctor', 'receptionist', 'patient'), departmentController.getDepartments);
 
 export default router;
