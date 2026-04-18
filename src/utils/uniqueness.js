@@ -1,4 +1,5 @@
-const checkUniqueUser = async ({ email, phno, excludeId = null }) => {
+// uniqueness.js
+const checkUniqueUser = async (UserModel, { email, phno, excludeId = null }) => {
   const query = {
     $or: [{ email }, { phno }],
   };
@@ -7,7 +8,7 @@ const checkUniqueUser = async ({ email, phno, excludeId = null }) => {
     query._id = { $ne: excludeId };
   }
 
-  const existing = await User.findOne(query);
+  const existing = await UserModel.findOne(query);
 
   if (existing) {
     if (existing.email === email) {

@@ -112,6 +112,8 @@ const userSchema = new mongoose.Schema(
       match: /^[0-9]{10}$/,
       unique: true,
     },
+    dob: { type: Date },
+    joining_date: { type: Date },
 
     spec: { type: String },
 

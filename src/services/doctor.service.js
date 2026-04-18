@@ -1,18 +1,41 @@
-import User from "../models/User.js";
+// doctor.service.js
 import bcrypt from "bcrypt";
 import { checkUniqueUser } from "../utils/uniqueness.js";
 
+// Import User model here (inside the file, not at top if there's any issue)
+let User;
+const getUserModel = async () => {
+  if (!User) {
+    const module = await import("../models/User.js");
+    User = module.default;
+  }
+  return User;
+};
+
+// Helper functions
+const normalizeEmail = (email) => {
+  if (!email) return email;
+  return email.trim().toLowerCase();
+};
+
+const sanitizePhone = (phno) => {
+  if (!phno) return phno;
+  return phno.toString().replace(/\D/g, '');
+};
+
 const createDoctor = async (data) => {
+  const UserModel = await getUserModel();
+
   const email = normalizeEmail(data.email);
   const phno = sanitizePhone(data.phno);
 
-  await checkUniqueUser({ email, phno });
+  await checkUniqueUser(UserModel, { email, phno });
 
   const password = data.password || "doctor@123";
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
-    const doctor = new User({
+    const doctor = new UserModel({
       ...data,
       email,
       phno,
@@ -35,40 +58,20 @@ const createDoctor = async (data) => {
   }
 };
 
-const changePassword = async (userId, oldPassword, newPassword) => {
-  const doctor = await User.findById(userId);
-  if (!doctor) throw new Error("Doctor not found");
-
-  const isMatch = await bcrypt.compare(oldPassword, doctor.password);
-  if (!isMatch) throw new Error("Old password is incorrect");
-
-  doctor.password = await bcrypt.hash(newPassword, 10);
-  await doctor.save();
-
-  return { message: "Password changed successfully" };
-};
-
-const getDoctors = async () => {
-  return await User.find({ role: "doctor" });
-};
-
 const updateDoctor = async (id, data) => {
+  const UserModel = await getUserModel();
+
   if (data.workingHours) {
     throw new Error("Use dedicated endpoint to update working hours");
   }
 
   let email, phno;
 
-  if (data.email) {
-    email = normalizeEmail(data.email);
-  }
-
-  if (data.phno) {
-    phno = sanitizePhone(data.phno);
-  }
+  if (data.email) email = normalizeEmail(data.email);
+  if (data.phno) phno = sanitizePhone(data.phno);
 
   if (email || phno) {
-    await checkUniqueUser({
+    await checkUniqueUser(UserModel, {
       email: email || undefined,
       phno: phno || undefined,
       excludeId: id,
@@ -83,10 +86,11 @@ const updateDoctor = async (id, data) => {
   if (phno) data.phno = phno;
 
   try {
-    const doctor = await User.findOneAndUpdate({ _id: id, role: "doctor" }, data, {
-      new: true,
-      runValidators: true,
-    });
+    const doctor = await UserModel.findOneAndUpdate(
+      { _id: id, role: "doctor" }, 
+      data, 
+      { new: true, runValidators: true }
+    );
 
     if (!doctor) throw new Error("Doctor not found");
 
@@ -100,28 +104,42 @@ const updateDoctor = async (id, data) => {
   }
 };
 
-const deleteDoctor = async (id) => {
-  const doctor = await User.findOneAndDelete({ _id: id, role: "doctor" });
+// Other functions (keep them simple)
+const changePassword = async (userId, oldPassword, newPassword) => {
+  const UserModel = await getUserModel();
+  const doctor = await UserModel.findById(userId);
   if (!doctor) throw new Error("Doctor not found");
 
+  const isMatch = await bcrypt.compare(oldPassword, doctor.password);
+  if (!isMatch) throw new Error("Old password is incorrect");
+
+  doctor.password = await bcrypt.hash(newPassword, 10);
+  await doctor.save();
+
+  return { message: "Password changed successfully" };
+};
+
+const getDoctors = async () => {
+  const UserModel = await getUserModel();
+  return await UserModel.find({ role: "doctor" }).populate('dept');
+};
+
+const deleteDoctor = async (id) => {
+  const UserModel = await getUserModel();
+  const doctor = await UserModel.findOneAndDelete({ _id: id, role: "doctor" });
+  if (!doctor) throw new Error("Doctor not found");
   return { message: "Doctor deleted successfully" };
 };
 
 const updateWorkingHours = async (doctorId, workingHours) => {
-  const doctor = await User.findOne({
-    _id: doctorId,
-    role: "doctor",
-  });
-
+  const UserModel = await getUserModel();
+  const doctor = await UserModel.findOne({ _id: doctorId, role: "doctor" });
   if (!doctor) throw new Error("Doctor not found");
 
   doctor.workingHours = workingHours;
-
   await doctor.save();
 
-  return {
-    message: "Working hours updated successfully",
-  };
+  return { message: "Working hours updated successfully" };
 };
 
 export default {
