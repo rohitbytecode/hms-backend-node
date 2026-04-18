@@ -1,18 +1,17 @@
-import bcrypt from 'bcrypt';
-import User from '../models/User.js';
-import { generateRandomPassword } from '../utils/password.utils.js';
-import { sendCredentialsEmail } from './email.service.js';
+import bcrypt from "bcrypt";
+import User from "../models/User.js";
+import { generateRandomPassword } from "../utils/password.utils.js";
+import { sendCredentialsEmail } from "./email.service.js";
 
 export const createPatientPortalAccount = async (email) => {
-
-  try {const existingUser = await User.findOne({ email });
+  const existingUser = await User.findOne({ email });
 
   if (existingUser) {
+    console.log(`Portal account already exists for: ${email}`);
     return;
   }
 
   const rawPassword = generateRandomPassword(10);
-
   const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
   const user = new User({
@@ -20,13 +19,12 @@ export const createPatientPortalAccount = async (email) => {
     password: hashedPassword,
     role: "patient",
     status: "Active",
-    mustChangePassword: true
+    mustChangePassword: true,
   });
 
   await user.save();
 
   await sendCredentialsEmail(email, rawPassword);
-} catch (err) {
-  console.error("Patient pirtal account creation failed:", err);
-}
+
+  console.log(`Portal account created for: ${email}`);
 };

@@ -36,7 +36,21 @@ const createPatient = async (req, res, next) => {
     await patient.save();
 
     if (normalizedEmail) {
-      await createPatientPortalAccount(normalizedEmail);
+      try {
+        await createPatientPortalAccount(normalizedEmail);
+      } catch (portalErr) {
+        console.error(
+          `Patient saved but portal creation failed for ${normalizedEmail}:`,
+          portalErr.message,
+        );
+
+        return res.status(201).json({
+          success: true,
+          patient,
+          warning:
+            "Patient created but portal account could not be set up. Please retry manually.",
+        });
+      }
     }
 
     res.status(201).json({
