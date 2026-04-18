@@ -48,8 +48,7 @@ const Patientschema = new mongoose.Schema(
     medical_history: { type: String },
     paymentMode: {
       type: String,
-      enum: ["cash", "online"],
-      default: "cash",
+      required: false,
     },
   },
   { timestamps: true },

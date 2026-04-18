@@ -1,6 +1,7 @@
 import Patient from "../models/patient.js";
 import { createPatientPortalAccount } from "../services/patientPortal.service.js";
-import { checkUniqueUser } from "../utils/uniqueness.js"; // ← Import this
+import { checkUniqueUser } from "../utils/uniqueness.js";
+import User from "../models/User.js";
 
 const normalizeEmail = (email) => {
   if (!email) return email;
@@ -14,11 +15,9 @@ const sanitizePhone = (phno) => {
 
 const createPatient = async (req, res, next) => {
   try {
-    const { name, email, phno, paymentMode } = req.body;
+    const { name, email, phno } = req.body;
 
-    console.log(
-      `Creating patient: ${name}, Email: ${email}, PaymentMode: ${paymentMode}`,
-    );
+    console.log(`Creating patient: ${name}, Email: ${email}`);
 
     const normalizedEmail = normalizeEmail(email);
     const sanitizedPhno = sanitizePhone(phno);
@@ -36,7 +35,7 @@ const createPatient = async (req, res, next) => {
 
     await patient.save();
 
-    if (paymentMode === "online" && normalizedEmail) {
+    if (normalizedEmail) {
       await createPatientPortalAccount(normalizedEmail);
     }
 
@@ -132,20 +131,33 @@ const updatePatient = async (req, res, next) => {
 };
 
 const deletePatient = async (req, res, next) => {
+  const session = await Patient.startSession();
+  session.startTransaction();
+
   try {
     const { id } = req.params;
 
-    const patient = await Patient.findByIdAndDelete(id);
+    const patient = await Patient.findByIdAndDelete(id, { session });
 
     if (!patient) {
+      await session.abortTransaction();
       const error = new Error("Patient not found");
       error.statusCode = 404;
       return next(error);
     }
 
+    if (patient.email) {
+      await User.findOneAndDelete({ email: patient.email }, { session });
+    }
+
+    await session.commitTransaction();
+
     res.json({ message: "Patient deleted successfully" });
   } catch (err) {
+    await session.abortTransaction();
     next(err);
+  } finally {
+    session.endSession();
   }
 };
 
