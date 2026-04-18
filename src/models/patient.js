@@ -5,11 +5,13 @@ const Patientschema = new mongoose.Schema(
     name: { type: String, required: true },
     email: {
       type: String,
+      unique: true,
       required: true,
       match: /.+@.+\..+/,
     },
     phno: {
       type: String,
+      unique: true,
       required: true,
       match: /^[0-9]{10}$/,
     },
@@ -46,8 +48,7 @@ const Patientschema = new mongoose.Schema(
     medical_history: { type: String },
     paymentMode: {
       type: String,
-      enum: ["cash", "online"],
-      default: "cash",
+      required: false,
     },
   },
   { timestamps: true },

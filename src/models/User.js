@@ -110,6 +110,7 @@ const userSchema = new mongoose.Schema(
     phno: {
       type: String,
       match: /^[0-9]{10}$/,
+      sparse: true,
       unique: true,
     },
     dob: { type: Date },
