@@ -22,6 +22,7 @@ import doctorRoutes from './routes/doctor.routes.js';
 import receptionRoutes from './routes/reception.routes.js';
 import billingRoutes from './routes/billing.routes.js';
 
+import leaveRoutes from './routes/leave.routes.js';
 import patientRoutes from './routes/patient.js';
 import deptRoutes from './routes/dept.js';
 import appointmentRoutes from './routes/appointment.js';
@@ -99,6 +100,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/users/doctors', doctorRoutes);
 app.use('/api/users/receptionist', receptionRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/leaves', leaveRoutes);
 
 app.use('/api/patients', patientRoutes);
 app.use('/api/departments', deptRoutes);

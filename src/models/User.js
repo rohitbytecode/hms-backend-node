@@ -135,6 +135,16 @@ const userSchema = new mongoose.Schema(
     workingHours: {
       type: [workingDaySchema],
     },
+
+    pendingWorkingHours: {
+  type: [workingDaySchema],
+  default: undefined
+},
+pendingWorkingHoursStatus: {
+  type: String,
+  enum: ['pending', 'approved', 'rejected'],
+  default: undefined
+}
   },
   { timestamps: true },
 );

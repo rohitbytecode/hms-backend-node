@@ -1,4 +1,5 @@
 import doctorService from '../services/doctor.service.js';
+import User from '../models/User.js';
 
 const createDoctor = async (req, res, next) => {
   try {
@@ -52,22 +53,50 @@ const deleteDoctor = async (req, res) => {
 };
 
 const updateMyWorkingHours = async (req, res) => {
-    try {
+  try {
+    const doctor = await User.findById(req.user.id)
+    if (!doctor) return res.status(404).json({ message: 'Doctor not found' })
 
-        if (req.user.role !== 'doctor') {
-            return res.status(403).json({ message: "Access denied" });
-        }
+    doctor.pendingWorkingHours = req.body.workingHours
+    doctor.pendingWorkingHoursStatus = 'pending'
+    await doctor.save()
 
-        const result = await doctorService.updateWorkingHours(
-            req.user.id,
-            req.body.workingHours
-        );
+    res.json({ message: 'Schedule change submitted for admin approval.' })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+}
 
-        res.status(200).json(result);
+  const approveSchedule = async (req, res) => {
+  try {
+    const doctor = await User.findById(req.params.id)
+    if (!doctor) return res.status(404).json({ message: 'Doctor not found' })
+    if (!doctor.pendingWorkingHours) return res.status(400).json({ message: 'No pending schedule.' })
 
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
+    doctor.workingHours = doctor.pendingWorkingHours
+    doctor.pendingWorkingHours = undefined
+    doctor.pendingWorkingHoursStatus = 'approved'
+    await doctor.save()
+
+    res.json({ message: 'Schedule approved.' })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+}
+
+  const rejectSchedule = async (req, res) => {
+  try {
+    const doctor = await User.findById(req.params.id)
+    if (!doctor) return res.status(404).json({ message: 'Doctor not found' })
+
+    doctor.pendingWorkingHours = undefined
+    doctor.pendingWorkingHoursStatus = 'rejected'
+    await doctor.save()
+
+    res.json({ message: 'Schedule rejected.' })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
 }
   
 export {
@@ -76,5 +105,7 @@ export {
   getDoctors,
   updateDoctor,
   deleteDoctor,
-  updateMyWorkingHours
+  updateMyWorkingHours,
+  approveSchedule,
+  rejectSchedule
 };
