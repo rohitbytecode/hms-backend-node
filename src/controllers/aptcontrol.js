@@ -1,5 +1,6 @@
 import Appointment from "../models/appointment.js";
 import mongoose from "mongoose";
+import Leave from '../models/leave.model.js'
 
 const DAYS = [
   "Sunday",
@@ -10,6 +11,58 @@ const DAYS = [
   "Friday",
   "Saturday",
 ];
+
+const checkDoctorLeave = async (doctorId, date) => {
+  const appointmentDate = new Date(date)
+  const leave = await Leave.findOne({
+    doctor: doctorId,
+    status: 'approved',
+    startDate: { $lte: appointmentDate },
+    endDate: { $gte: appointmentDate }
+  })
+  if (leave) {
+    return {
+      onLeave: true,
+      message: `Doctor is on approved leave on this date. Please choose a different date or doctor.`
+    }
+  }
+  return { onLeave: false }
+}
+
+const checkTimeConflict = async (doctorId, date, time) => {
+  const startOfDay = new Date(date)
+  startOfDay.setHours(0, 0, 0, 0)
+  const endOfDay = new Date(date)
+  endOfDay.setHours(23, 59, 59, 999)
+
+  const existing = await Appointment.find({
+    doctor: doctorId,
+    date: { $gte: startOfDay, $lte: endOfDay },
+    status: 'scheduled'
+  }).lean()
+
+  if (existing.length === 0) return { conflict: false }
+
+  const toMinutes = (t) => {
+    const [h, m] = t.split(':').map(Number)
+    return h * 60 + m
+  }
+
+  const newTime = toMinutes(time)
+
+  for (const apt of existing) {
+    const existingTime = toMinutes(apt.time)
+    const diff = Math.abs(newTime - existingTime)
+    if (diff < 20) {
+      return {
+        conflict: true,
+        message: `Dr. is already booked at ${apt.time}. Please choose a time at least 20 minutes apart.`
+      }
+    }
+  }
+
+  return { conflict: false }
+}
 
 const validateWorkingHours = (doctorDoc, date, time) => {
   if (!doctorDoc.workingHours || doctorDoc.workingHours.length === 0) {
@@ -65,6 +118,16 @@ const createAppointment = async (req, res) => {
       if (!valid) {
         return res.status(400).json({ message });
       }
+
+      const { conflict, message: conflictMsg } = await checkTimeConflict(doctor, date, time);
+      if (conflict) {
+        return res.status(400).json({ message: conflictMsg });
+      }
+    }
+
+    const { onLeave, message: leaveMsg } = await checkDoctorLeave(doctor, date);
+    if (onLeave) {
+      return res.status(400).json({ message: leaveMsg });
     }
 
     const appointment = new Appointment(req.body);
