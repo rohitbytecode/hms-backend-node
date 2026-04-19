@@ -37,7 +37,8 @@ const createPatient = async (req, res, next) => {
 
     if (normalizedEmail) {
       try {
-        await createPatientPortalAccount(normalizedEmail);
+        const patientName = req.body.name || patient.name || "";
+        await createPatientPortalAccount(normalizedEmail, patient.name);
       } catch (portalErr) {
         console.error(
           `Patient saved but portal creation failed for ${normalizedEmail}:`,
