@@ -17,7 +17,7 @@ export const login = async (req, res) => {
     const user = await User.findOne({
       email: { $regex: new RegExp(`^${email}$`, "i") },
       role: { $regex: new RegExp(`^${role}$`, "i") },
-    }).select("email role status password name");
+    }).select("email role status password name phno");
     if (!user) {
       return res.status(401).json({ success: false, message: "Invalid role or email" });
     }
@@ -56,6 +56,7 @@ export const login = async (req, res) => {
         role: user.role,
         status: user.status,
         name: user.name,
+        phno: user.phno || ''
       },
     });
   } catch (error) {

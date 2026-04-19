@@ -44,4 +44,31 @@ router.post('/signup', async (req, res) => {
   }
 });
 
+router.put('/me', protect, async (req, res) => {
+  try {
+    const { phno } = req.body;
+
+    if (!phno || !/^\d{10}$/.test(phno.replace(/\D/g, ''))) {
+      return res.status(400).json({ success: false, message: 'Valid 10-digit phone number is required.' });
+    }
+
+    const cleanPhone = phno.replace(/\D/g, '');
+
+    const existing = await User.findOne({ phno: cleanPhone, _id: { $ne: req.user.id } });
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'This phone number is already registered.' });
+    }
+
+    const updated = await User.findByIdAndUpdate(
+      req.user.id,
+      { phno: cleanPhone },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 export default router;
