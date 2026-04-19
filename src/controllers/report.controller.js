@@ -67,26 +67,36 @@ export const getAppointmentReport = async (req, res, next) => {
 
 export const getDoctorSummary = async (req, res, next) => {
   try {
-    const doctorId = req.user.id;
+    const doctorId = req.user.id
 
-    const totalAppointments = await Appointment.countDocuments({
-      doctor: doctorId
-    });
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
 
-    const completedAppointments = await Appointment.countDocuments({
-      doctor: doctorId,
-      status: "completed"
-    });
+    const [
+      completedAppointments,
+      todaysAppointments,
+      upcomingAppointments,
+      allAppointments
+    ] = await Promise.all([
+      Appointment.countDocuments({ doctor: doctorId, status: 'completed' }),
+      Appointment.countDocuments({ doctor: doctorId, date: { $gte: startOfToday, $lte: endOfToday } }),
+      Appointment.countDocuments({ doctor: doctorId, status: 'scheduled', date: { $gt: endOfToday } }),
+      Appointment.find({ doctor: doctorId }, 'patient').lean()
+    ])
+
+    const uniquePatients = new Set(allAppointments.map((a) => String(a.patient))).size
 
     res.status(200).json({
       success: true,
       data: {
-        totalAppointments,
+        uniquePatients,
+        todaysAppointments,
+        upcomingAppointments,
         completedAppointments
       }
-    });
-
+    })
   } catch (error) {
-    next(error);
+    next(error)
   }
-};
+}
