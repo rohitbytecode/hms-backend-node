@@ -3,7 +3,7 @@ import User from "../models/User.js";
 import { generateRandomPassword } from "../utils/password.utils.js";
 import { sendCredentialsEmail } from "./email.service.js";
 
-export const createPatientPortalAccount = async (email) => {
+export const createPatientPortalAccount = async (email, name) => {
   const existingUser = await User.findOne({ email });
 
   if (existingUser) {
@@ -20,6 +20,7 @@ export const createPatientPortalAccount = async (email) => {
     role: "patient",
     status: "Active",
     mustChangePassword: true,
+    name: name || "",
   });
 
   await user.save();

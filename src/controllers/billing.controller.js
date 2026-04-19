@@ -1,25 +1,36 @@
-import Billing from '../models/billing.js';
-import billingService from '../services/billing.service.js';
-import mongoose from 'mongoose';
-import { createOrder } from '../services/payment.service.js';
-import razorpay from '../config/razorpay.js';
-import crypto from 'crypto';
+import Billing from "../models/billing.js";
+import billingService from "../services/billing.service.js";
+import mongoose from "mongoose";
+import { createOrder } from "../services/payment.service.js";
+import razorpay from "../config/razorpay.js";
+import crypto from "crypto";
 
 const createBilling = async (req, res, next) => {
   try {
-    const { patient, appointment, amount } = req.body;
+    const { patient, appointment, amount, paymentMethod, transactionId, status } =
+      req.body;
 
     if (!patient || !amount) {
       return res.status(400).json({
-      success: false,
-      message: "Patient and amount are required",
+        success: false,
+        message: "Patient and amount are required",
+      });
+    }
+
+    if (!paymentMethod || !["cash", "online"].includes(paymentMethod)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid payment method (cash or online) is required",
       });
     }
 
     const billing = await Billing.create({
       patient,
-      appointment,
+      appointment: appointment || undefined,
       amount,
+      paymentMethod,
+      status: status || "pending",
+      transactionId: transactionId || undefined,
       createdBy: req.user.id,
     });
 
@@ -40,6 +51,13 @@ const getAllBilling = async (req, res, next) => {
 
     const bills = await Billing.find()
       .populate("patient", "name email")
+      .populate({
+        path: "appointment",
+        populate: [
+          { path: "doctor", select: "name spec" },
+          { path: "dept", select: "dept" },
+        ],
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -62,18 +80,20 @@ const getAllBilling = async (req, res, next) => {
 
 const getMyBills = async (req, res, next) => {
   try {
-    const patient = await mongoose.model('Patient').findOne({ email: req.user.email });
+    const patient = await mongoose.model("Patient").findOne({ email: req.user.email });
     if (!patient) {
-      return res.status(404).json({ success: false, message: "Patient record not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Patient record not found" });
     }
 
     const bills = await Billing.find({ patient: patient._id })
       .populate({
-        path: 'appointment',
+        path: "appointment",
         populate: [
-          { path: 'doctor', select: 'name' },
-          { path: 'dept', select: 'dept' }
-        ]
+          { path: "doctor", select: "name" },
+          { path: "dept", select: "dept" },
+        ],
       })
       .sort({ createdAt: -1 });
 
@@ -89,7 +109,7 @@ const getMyBills = async (req, res, next) => {
 const createRazorpayOrder = async (req, res, next) => {
   try {
     const { amount, billId } = req.body;
-    
+
     // Check if bill exists
     const bill = await Billing.findById(billId);
     if (!bill) {
@@ -103,7 +123,7 @@ const createRazorpayOrder = async (req, res, next) => {
       keyId: process.env.RAZORPAY_KEY_ID,
       orderId: order.id,
       amount: order.amount,
-      currency: order.currency
+      currency: order.currency,
     });
   } catch (error) {
     next(error);
@@ -134,13 +154,13 @@ const verifyRazorpayPayment = async (req, res, next) => {
       res.status(200).json({
         success: true,
         valid: true,
-        message: "Payment verified successfully"
+        message: "Payment verified successfully",
       });
     } else {
       res.status(400).json({
         success: false,
         valid: false,
-        message: "Invalid signature"
+        message: "Invalid signature",
       });
     }
   } catch (error) {
@@ -223,7 +243,7 @@ const createBillingStaff = async (req, res, next) => {
     const billing = await billingService.createBillingStaff(req.body);
     res.status(201).json(billing);
   } catch (error) {
-    next(error)  
+    next(error);
   }
 };
 
@@ -231,12 +251,13 @@ const changePassword = async (req, res, next) => {
   try {
     const { oldPassword, newPassword } = req.body;
     const result = await billingService.changePassword(
-      req.user.id, 
-      oldPassword, 
-      newPassword);
+      req.user.id,
+      oldPassword,
+      newPassword,
+    );
     res.status(200).json(result);
   } catch (err) {
-    next(err)
+    next(err);
   }
 };
 
@@ -245,7 +266,7 @@ const getAllBillingStaff = async (req, res, next) => {
     const billing = await billingService.getAllBillingStaff();
     res.json(billing);
   } catch (err) {
-    next(err)
+    next(err);
   }
 };
 
@@ -255,7 +276,7 @@ const updateBillingStaff = async (req, res, next) => {
     const billing = await billingService.updateBillingStaff(id, req.body);
     res.json(billing);
   } catch (err) {
-    next(err)
+    next(err);
   }
 };
 
@@ -265,7 +286,7 @@ const deleteBillingStaff = async (req, res, next) => {
     const result = await billingService.deleteBillingStaff(id);
     res.json(result);
   } catch (err) {
-    next(err)
+    next(err);
   }
 };
 
@@ -277,7 +298,6 @@ export {
   deleteBilling,
 
   // Staff CRUD for admin
-
   createBillingStaff,
   changePassword,
   getAllBillingStaff,
@@ -285,5 +305,5 @@ export {
   deleteBillingStaff,
   getMyBills,
   createRazorpayOrder,
-  verifyRazorpayPayment
-}
+  verifyRazorpayPayment,
+};
