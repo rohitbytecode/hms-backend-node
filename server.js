@@ -2,6 +2,9 @@ import 'dotenv/config';
 import http from 'http';
 import app from './src/app.js';
 import { connectDB, closeDB } from './src/config/db.js';
+import { startAppointmentJob } from './src/jobs/appointmentJob.js';
+import { start } from 'repl';
+
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
@@ -19,6 +22,7 @@ const startServer = async() => {
 
     await connectDB();
     console.log("DB connected successfully");
+    startAppointmentJob();
 
     server = http.createServer(app);
 

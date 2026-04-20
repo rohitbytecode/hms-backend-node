@@ -28,7 +28,6 @@ import deptRoutes from './routes/dept.js';
 import appointmentRoutes from './routes/appointment.js';
 
 const app = express();
-
 app.set('trust proxy', 1);
 
 //basic security
